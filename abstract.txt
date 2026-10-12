@@ -1,0 +1,36 @@
+TALK TOPIC
+==========
+Beyond Local Setup: Building a Secure, AI-Powered Cloud IDE with Eclipse Theia and Google Cloud
+
+ALTERNATE TITLES
+-----------------
+- "Theia + Vertex AI: Engineering a Browser-Based Dev Environment That Thinks With You"
+- "From Laptop to Cloud: Reimagining Developer Onboarding with Eclipse Theia, Gemini, and Google Cloud Workstations"
+
+ABSTRACT
+========
+"Works on my machine" is still one of the most expensive sentences in software engineering. Local environment drift, slow onboarding, and inconsistent tooling cost teams days of productivity and expose organizations to security and compliance risk — especially in regulated or security-sensitive industries.
+
+This talk walks through the design and implementation of a cloud-based, AI-powered development environment built on Eclipse Theia and Google Cloud. Rather than building an IDE from scratch, we show how to compose proven open-source and managed cloud building blocks — Eclipse Theia, Theia AI, Google Cloud Workstations, Vertex AI/Gemini, Open VSX, Docker, and Cloud Build — into a single browser-accessible workspace that is reproducible, centrally governed, and augmented with AI assistance for code generation, explanation, and debugging.
+
+Attendees will see the system's architecture end to end: how isolated, containerized workspaces are provisioned per developer or team; how an AI coding assistant is wired into the IDE through Vertex AI with proper authentication and access boundaries; how organizations curate and distribute approved extensions through a private Open VSX registry; and how IAM, Cloud Build, Artifact Registry, and Cloud Logging work together to keep the platform secure, auditable, and scalable.
+
+Beyond the architecture, we'll discuss the real tradeoffs encountered while building this: balancing customization with central control, managing AI assistant costs and latency at scale, securing multi-tenant workspaces, and designing for both enterprise engineering teams and educational institutions that need identical, zero-install coding environments for students.
+
+This session is for platform engineers, developer experience (DevEx) teams, engineering leaders, and educators who want a practical blueprint for standardizing and modernizing how their organization writes code — without sacrificing security or developer flexibility.
+
+KEY TAKEAWAYS
+--------------
+1. A reference architecture for a browser-based, AI-assisted IDE built on Eclipse Theia and Google Cloud.
+2. Patterns for provisioning secure, isolated, reproducible developer workspaces at scale.
+3. How to safely integrate an AI coding assistant (Gemini via Vertex AI) into an IDE with proper access control.
+4. Lessons learned on governance: extension curation, IAM policy design, and auditability in multi-tenant dev environments.
+5. A path from proof-of-concept to a commercially viable, SaaS-delivered developer platform.
+
+SUGGESTED FORMAT
+-----------------
+45-minute technical talk with live architecture walkthrough and demo of workspace provisioning + AI-assisted coding.
+
+AUDIENCE LEVEL
+---------------
+Intermediate to Advanced (platform/DevEx engineers, cloud architects, engineering managers, CS educators)
