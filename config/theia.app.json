@@ -1,0 +1,34 @@
+{
+  "applicationName": "AI-Powered Cloud IDE",
+  "defaultTheme": "dark",
+  "defaultIconTheme": "vs-seti",
+  "preferences": {
+    "files.enableTrash": false,
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay",
+    "java.jdt.ls.java.home": "/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home",
+    "java.configuration.runtimes": [
+      {
+        "name": "JavaSE-21",
+        "path": "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+      },
+      {
+        "name": "JavaSE-25",
+        "path": "/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home",
+        "default": true
+      }
+    ],
+    "python.languageServer": "Jedi"
+  },
+  "theiaPluginsDir": "plugins",
+  "theiaPlugins": {
+    "vscode.git": "https://open-vsx.org/api/vscode/git/1.95.3/file/vscode.git-1.95.3.vsix",
+    "vscode.typescript-language-features": "https://open-vsx.org/api/vscode/typescript-language-features/1.95.3/file/vscode.typescript-language-features-1.95.3.vsix",
+    "vscode.json-language-features": "https://open-vsx.org/api/vscode/json-language-features/1.95.3/file/vscode.json-language-features-1.95.3.vsix",
+    "vscode.npm": "https://open-vsx.org/api/vscode/npm/1.95.3/file/vscode.npm-1.95.3.vsix",
+    "ms-python.python": "https://open-vsx.org/api/ms-python/python/2026.4.0/file/ms-python.python-2026.4.0.vsix",
+    "ms-vscode.js-debug": "https://open-vsx.org/api/ms-vscode/js-debug/1.140.0/file/ms-vscode.js-debug-1.140.0.vsix",
+    "redhat.java": "https://open-vsx.org/api/redhat/java/1.59.2026102008/file/redhat.java-1.59.2026102008.vsix",
+    "vscjava.vscode-java-debug": "https://open-vsx.org/api/vscjava/vscode-java-debug/0.60.0/file/vscjava.vscode-java-debug-0.60.0.vsix"
+  }
+}

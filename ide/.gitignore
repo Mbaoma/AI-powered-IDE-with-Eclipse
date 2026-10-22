@@ -1,0 +1,8 @@
+node_modules/
+lib/
+plugins/
+src-gen/
+esbuild.mjs
+gen-esbuild.*.mjs
+.browser_modules/
+*.log

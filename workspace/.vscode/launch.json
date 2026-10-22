@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug hello.js (Node)",
+      "program": "${workspaceFolder}/hello.js",
+      "args": ["world"],
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "name": "Debug hello.py (Python)",
+      "program": "${workspaceFolder}/hello.py",
+      "args": ["world"],
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Debug Hello.java (Java)",
+      "mainClass": "Hello",
+      "projectName": "workspace"
+    }
+  ]
+}

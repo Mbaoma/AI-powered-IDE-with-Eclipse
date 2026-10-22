@@ -1,0 +1,79 @@
+{
+  "name": "ai-ide-browser-app",
+  "version": "0.1.0",
+  "private": true,
+  "license": "EPL-2.0",
+  "comment:theia": "The theia/theiaPlugins*/below fields are GENERATED from ../config/theia.app.json by scripts/sync-theia-config.js. Edit that file, not this block, then rerun the sync script (setup.sh does this automatically).",
+  "theia": {
+    "target": "browser",
+    "frontend": {
+      "config": {
+        "applicationName": "AI-Powered Cloud IDE",
+        "defaultTheme": "dark",
+        "defaultIconTheme": "vs-seti",
+        "preferences": {
+          "files.enableTrash": false,
+          "editor.formatOnSave": true,
+          "files.autoSave": "afterDelay",
+          "java.jdt.ls.java.home": "/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home",
+          "java.configuration.runtimes": [
+            {
+              "name": "JavaSE-21",
+              "path": "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+            },
+            {
+              "name": "JavaSE-25",
+              "path": "/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home",
+              "default": true
+            }
+          ],
+          "python.languageServer": "Jedi"
+        }
+      }
+    }
+  },
+  "theiaPluginsDir": "plugins",
+  "theiaPlugins": {
+    "vscode.git": "https://open-vsx.org/api/vscode/git/1.95.3/file/vscode.git-1.95.3.vsix",
+    "vscode.typescript-language-features": "https://open-vsx.org/api/vscode/typescript-language-features/1.95.3/file/vscode.typescript-language-features-1.95.3.vsix",
+    "vscode.json-language-features": "https://open-vsx.org/api/vscode/json-language-features/1.95.3/file/vscode.json-language-features-1.95.3.vsix",
+    "vscode.npm": "https://open-vsx.org/api/vscode/npm/1.95.3/file/vscode.npm-1.95.3.vsix",
+    "ms-python.python": "https://open-vsx.org/api/ms-python/python/2026.4.0/file/ms-python.python-2026.4.0.vsix",
+    "ms-vscode.js-debug": "https://open-vsx.org/api/ms-vscode/js-debug/1.140.0/file/ms-vscode.js-debug-1.140.0.vsix",
+    "redhat.java": "https://open-vsx.org/api/redhat/java/1.59.2026102008/file/redhat.java-1.59.2026102008.vsix",
+    "vscjava.vscode-java-debug": "https://open-vsx.org/api/vscjava/vscode-java-debug/0.60.0/file/vscjava.vscode-java-debug-0.60.0.vsix"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@theia/core": "1.76.0",
+    "@theia/filesystem": "1.76.0",
+    "@theia/workspace": "1.76.0",
+    "@theia/navigator": "1.76.0",
+    "@theia/preferences": "1.76.0",
+    "@theia/editor": "1.76.0",
+    "@theia/monaco": "1.76.0",
+    "@theia/terminal": "1.76.0",
+    "@theia/process": "1.76.0",
+    "@theia/scm": "1.76.0",
+    "@theia/outline-view": "1.76.0",
+    "@theia/markers": "1.76.0",
+    "@theia/task": "1.76.0",
+    "@theia/variable-resolver": "1.76.0",
+    "@theia/debug": "1.76.0",
+    "@theia/plugin-ext": "1.76.0",
+    "@theia/plugin-ext-vscode": "1.76.0",
+    "@theia/vsx-registry": "1.76.0",
+    "@theia/userstorage": "1.76.0"
+  },
+  "devDependencies": {
+    "@theia/cli": "1.76.0"
+  },
+  "scripts": {
+    "clean": "theia clean",
+    "build": "theia build --mode development",
+    "watch": "theia build --watch --mode development",
+    "download:plugins": "theia download:plugins",
+    "start": "theia start --hostname 0.0.0.0 --port 3000 --plugins=local-dir:plugins"
+  }
+}
