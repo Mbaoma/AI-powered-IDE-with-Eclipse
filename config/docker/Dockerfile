@@ -47,6 +47,8 @@ RUN chmod +x /opt/entrypoint.sh
 
 ENV THEIA_PORT=80
 ENV WORKSPACE_DIR=/home/workspace
+
+ENV THEIA_WEBVIEW_EXTERNAL_ENDPOINT={{hostname}}
 EXPOSE 80
 
 ENTRYPOINT ["/opt/entrypoint.sh"]

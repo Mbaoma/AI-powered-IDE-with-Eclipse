@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Creates the workstation cluster, config, and a single
-# workstation pointing at the exisiting image
+# Creates the workstation cluster, config, and a workstation pointing at the exisiting image
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -24,21 +23,40 @@ if [ "${NETWORK}" != "default" ]; then
   CONFIG_NETWORK_FLAGS+=(--disable-public-ip-addresses)
 fi
 
+# Phase 3: thread GOOGLE_API_KEY into the container so AI features work in the deployed workstation too.
+CONTAINER_ENV_FLAGS=()
+if [ -n "${GOOGLE_API_KEY:-}" ]; then
+  CONTAINER_ENV_FLAGS+=(--container-env="GOOGLE_API_KEY=${GOOGLE_API_KEY}")
+fi
+
 echo "==> Config '${CONFIG_ID}' (image: ${IMAGE}:latest)"
-gcloud beta workstations configs describe "${CONFIG_ID}" --cluster "${CLUSTER_ID}" --region "${REGION}" --project "${PROJECT_ID}" >/dev/null 2>&1 || \
-gcloud beta workstations configs create "${CONFIG_ID}" \
-  --project "${PROJECT_ID}" \
-  --region "${REGION}" \
-  --cluster "${CLUSTER_ID}" \
-  --container-custom-image "${IMAGE}:latest" \
-  --service-account "${SERVICE_ACCOUNT_ID:-theia-ai-ide-ws}@${PROJECT_ID}.iam.gserviceaccount.com" \
-  --machine-type "${MACHINE_TYPE}" \
-  --boot-disk-size "${BOOT_DISK_SIZE_GB}" \
-  --pd-disk-type "${PERSISTENT_DISK_TYPE:-pd-balanced}" \
-  --pd-disk-size "${PERSISTENT_DISK_SIZE_GB}" \
-  --idle-timeout "${IDLE_TIMEOUT_SECONDS}" \
-  --running-timeout "${RUNNING_TIMEOUT_SECONDS}" \
-  ${CONFIG_NETWORK_FLAGS[@]+"${CONFIG_NETWORK_FLAGS[@]}"}
+if gcloud beta workstations configs describe "${CONFIG_ID}" --cluster "${CLUSTER_ID}" --region "${REGION}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
+  if [ -n "${GOOGLE_API_KEY:-}" ]; then
+    echo "    already exists -- syncing container env (GOOGLE_API_KEY)"
+    gcloud beta workstations configs update "${CONFIG_ID}" \
+      --project "${PROJECT_ID}" \
+      --region "${REGION}" \
+      --cluster "${CLUSTER_ID}" \
+      "${CONTAINER_ENV_FLAGS[@]}"
+  else
+    echo "    already exists, skipping (no GOOGLE_API_KEY in config/.env to sync)"
+  fi
+else
+  gcloud beta workstations configs create "${CONFIG_ID}" \
+    --project "${PROJECT_ID}" \
+    --region "${REGION}" \
+    --cluster "${CLUSTER_ID}" \
+    --container-custom-image "${IMAGE}:latest" \
+    --service-account "${SERVICE_ACCOUNT_ID:-theia-ai-ide-ws}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --machine-type "${MACHINE_TYPE}" \
+    --boot-disk-size "${BOOT_DISK_SIZE_GB}" \
+    --pd-disk-type "${PERSISTENT_DISK_TYPE:-pd-balanced}" \
+    --pd-disk-size "${PERSISTENT_DISK_SIZE_GB}" \
+    --idle-timeout "${IDLE_TIMEOUT_SECONDS}" \
+    --running-timeout "${RUNNING_TIMEOUT_SECONDS}" \
+    ${CONFIG_NETWORK_FLAGS[@]+"${CONFIG_NETWORK_FLAGS[@]}"} \
+    ${CONTAINER_ENV_FLAGS[@]+"${CONTAINER_ENV_FLAGS[@]}"}
+fi
 
 echo "==> Workstation '${WORKSTATION_ID}'"
 gcloud beta workstations describe "${WORKSTATION_ID}" --cluster "${CLUSTER_ID}" --config "${CONFIG_ID}" --region "${REGION}" --project "${PROJECT_ID}" >/dev/null 2>&1 || \
