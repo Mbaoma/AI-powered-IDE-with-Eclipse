@@ -7,18 +7,21 @@ WORKDIR /opt/repo
 
 COPY config/theia.app.json config/theia.app.json
 COPY scripts/sync-theia-config.js scripts/sync-theia-config.js
-COPY ide/package.json ide/yarn.lock ide/
+COPY ide/ ide/
 RUN node scripts/sync-theia-config.js
 
 WORKDIR /opt/repo/ide
+RUN node -e " \
+  const fs = require('fs'); \
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); \
+  pkg.theia.frontend.config.preferences['java.jdt.ls.java.home'] = '/opt/java/openjdk'; \
+  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n'); \
+"
+
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN yarn install --frozen-lockfile --network-timeout 600000 --network-concurrency 4
-
-COPY ide/ ./
 RUN node_modules/.bin/theia build
 RUN node_modules/.bin/theia download:plugins --ignore-errors
-
-RUN sed -i 's#/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home#/opt/java/openjdk#' package.json
 
 # ---- runtime: JDK (for the Java extension), Node and Python ----
 FROM eclipse-temurin:25-jdk-jammy AS runtime
