@@ -1,0 +1,7 @@
+ide/node_modules/
+ide/lib/
+ide/plugins/
+ide/.browser_modules/
+config/.env
+config/gcp/deploy.env
+*.log

@@ -1,0 +1,9 @@
+.git
+.claude
+images
+ide/node_modules
+ide/lib
+ide/plugins
+ide/src-gen
+ide/esbuild.mjs
+ide/gen-esbuild.*.mjs
