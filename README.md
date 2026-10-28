@@ -69,6 +69,8 @@ cp config/gcp/deploy.env.example config/gcp/deploy.env
 
 ![deployed IDE](images/phase-2/deployed-ide.png)
 
+[Deployed IDE](theia-ai-ide-dev-1.cluster-56mg5lb7vjfuoqjh2u7tpfhxby.cloudworkstations.dev)
+
 **Cleanup:**
 
 ```bash
