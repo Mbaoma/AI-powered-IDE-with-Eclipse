@@ -17,65 +17,29 @@ scripts/
 workspace/              Sample project opened by the IDE (one file per language)
 ```
 
-## Phase 2: Google Cloud Deployment
+## Phase 3: AI Integration
 
-Containerizes the Phase 1 IDE and runs it on Google Cloud Workstations.
+Wires Gemini into the IDE through Theia AI's built-in Google AI provider, using the **free-tier Gemini Developer API** (so this costs nothing to develop against).
 
-**Goal:** any authorized developer can launch a browser-based workstation from a custom container image in under ~60s, with persistent storage.
+**Why the free Developer API instead of Vertex AI:** Vertex AI is GCP's enterprise route while Gemini Developer API, via Google AI Studio, gives free, rate-limited access to current Gemini models with just an API key (a better fit for development). Vertex AI remains an option for a later production purpose.
 
-**What it adds:**
+**Theia AI already supports this natively**: Google AI is a first-class provider alongside Anthropic/OpenAI/Ollama, configured via a `GOOGLE_API_KEY` environment variable or in-app preferences.
 
-| File / resource | Purpose |
-|---|---|
-| `Dockerfile` | Packages the Theia app, language runtimes (Node, Python, JDK),  CLI tools into one pinned image |
-| `cloudbuild.yaml` | Cloud Build pipeline |
-| Workstation cluster and config | References the custom image, sets machine type, resource limits, idle/auto-shutdown timeouts |
-| Networking | Private IP / VPC-SC for the cluster, firewall rules, Cloud NAT for outbound package installs |
+**Free models check [here](https://ai.google.dev/gemini-api/docs/pricing) for the current list**
 
-**Exit criteria:** a workstation launches from the custom image in under ~60s and its state persists across sessions.
+| Model | Use it for | Why |
+|---|---|---|
+| `gemini-3.8-flash` | Chat-based debugging, "explain this code", commit-message generation | Current flagship with the broadest free-tier access |
+| `gemini-3.5-flash-lite` | Inline completion | Fastest and cheapest model |
+
+**Exit criteria:** AI assistance works from inside the IDE -- local (Phase 1) or the Phase 2 cloud workstation, the wiring is the same either way -- authenticated with a free-tier API key (not baked into the image), and usage stays within free-tier rate limits.
 
 **Prerequisites:**
 
-| Tool / account | Why | Check |
-|---|---|---|
-| GCP project with billing enabled | Hosts the Workstations, Artifact Registry, and Cloud Build resources | — |
-| `gcloud` CLI, authenticated | Provisioning and deploys | `gcloud auth list` |
-| Workstations, Artifact Registry, Cloud Build APIs enabled on the project | Required services | `gcloud services list --enabled` |
-| Docker | Build/test the container image locally before pushing | `docker --version` |
-
-### Build and deploy
-
-```bash
-cp config/gcp/deploy.env.example config/gcp/deploy.env
-# edit config/gcp/deploy.env
-
-./scripts/gcp-enable-apis.sh  
-./scripts/gcp-network-setup.sh (optional)
-
-./scripts/docker-smoke-test.sh 
-./scripts/gcp-build-and-push.sh
-./scripts/gcp-create-workstation.sh
-```
-
-![artifact registry](images/phase-2/artifact-registry.png)
-
-![cloudbuild](images/phase-2/cloudbuild.png)
-
-`gcp-create-workstation.sh` prints a console URL at the end, open it and click **Launch** next to the workstation name to open the IDE in your browser.
-
-![workstation output](images/phase-2/workstation.png)
-
-![workstation-2](images/phase-2/workstation-2.png)
-
-![deployed IDE](images/phase-2/deployed-ide.png)
-
-**Cleanup:**
-
-```bash
-./scripts/gcp-cleanup.sh
-```
-
-Deletes everything the scripts above created (workstation, config, cluster, Artifact Registry repo, and any dedicated network/NAT) so nothing keeps billing. Prompts for confirmation; pass `-y` to skip it.
+| Tool / account | Purpose |
+|---|---|
+| A Google account | Required to generate a Gemini API key
+| Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) | Free, no credit card, no GCP project required
 
 ## Documentation
 
@@ -85,3 +49,12 @@ Deletes everything the scripts above created (workstation, config, cluster, Arti
 - [Authoring VS Code Extensions for Theia](https://theia-ide.org/docs/authoring_vscode_extensions/): how the bundled extensions in `config/theia.app.json` get built and published
 - [Open VSX Registry](https://open-vsx.org): the bundled extensions
 - [Eclipse Foundation](https://www.eclipse.org/): project governance and the Eclipse ecosystem
+- [Using AI Features in Theia IDE](https://theia-ide.org/docs/user_ai/): how Theia AI's provider/agent settings work, including the built-in Google AI provider Phase 3 uses
+- [Gemini API docs](https://ai.google.dev/gemini-api/docs): the Developer API Phase 3 calls
+- [Gemini API pricing / free tier](https://ai.google.dev/gemini-api/docs/pricing): current free-tier model list and limits -- check before relying on the table above, it changes
+- [Google AI Studio](https://aistudio.google.com/apikey): where to generate the free `GOOGLE_API_KEY`
+
+
+gcloud beta workstations stop theia-ai-ide-dev-1 --cluster theia-ai-ide-cluster --config theia-ai-ide-config --region us-east1 --project gdg-trainer-session
+
+gcloud beta workstations start theia-ai-ide-dev-1 --cluster theia-ai-ide-cluster --config theia-ai-ide-config --region us-east1  --project gdg-trainer-session

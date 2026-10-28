@@ -8,6 +8,14 @@ WORKSPACE="$(cd workspace && pwd)"
 
 unset PREFIX
 
+# Phase 3: AI features read GOOGLE_API_KEY from the environment. 
+if [ -f config/.env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source config/.env
+  set +a
+fi
+
 echo "==> Starting Theia on http://localhost:${PORT}"
 echo "==> Workspace: ${WORKSPACE}"
 cd ide

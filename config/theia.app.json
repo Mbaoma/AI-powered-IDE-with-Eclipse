@@ -18,7 +18,8 @@
         "default": true
       }
     ],
-    "python.languageServer": "Jedi"
+    "python.languageServer": "Jedi",
+    "ai-features.google.allowEnvironmentApiKey": true
   },
   "theiaPluginsDir": "plugins",
   "theiaPlugins": {

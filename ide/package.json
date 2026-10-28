@@ -27,7 +27,8 @@
               "default": true
             }
           ],
-          "python.languageServer": "Jedi"
+          "python.languageServer": "Jedi",
+          "ai-features.google.allowEnvironmentApiKey": true
         }
       }
     }
@@ -64,7 +65,18 @@
     "@theia/plugin-ext": "1.76.0",
     "@theia/plugin-ext-vscode": "1.76.0",
     "@theia/vsx-registry": "1.76.0",
-    "@theia/userstorage": "1.76.0"
+    "@theia/userstorage": "1.76.0",
+    "@theia/ai-core": "1.76.0",
+    "@theia/ai-core-ui": "1.76.0",
+    "@theia/ai-chat": "1.76.0",
+    "@theia/ai-chat-ui": "1.76.0",
+    "@theia/ai-code-completion": "1.76.0",
+    "@theia/ai-editor": "1.76.0",
+    "@theia/ai-ide": "1.76.0",
+    "@theia/ai-terminal": "1.76.0",
+    "@theia/ai-history": "1.76.0",
+    "@theia/ai-registry": "1.76.0",
+    "@theia/ai-google": "1.76.0"
   },
   "devDependencies": {
     "@theia/cli": "1.76.0"
