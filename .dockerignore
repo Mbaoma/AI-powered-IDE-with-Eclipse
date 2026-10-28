@@ -1,6 +1,10 @@
 .git
 .claude
 images
+# Secrets: never let these reach the build context, even though no COPY
+# instruction references them today -- defends against a future `COPY . .`.
+config/.env
+config/gcp/deploy.env
 ide/node_modules
 ide/lib
 ide/plugins
