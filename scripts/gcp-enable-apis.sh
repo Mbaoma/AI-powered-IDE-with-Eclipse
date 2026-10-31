@@ -10,6 +10,7 @@ gcloud services enable \
   artifactregistry.googleapis.com \
   cloudbuild.googleapis.com \
   compute.googleapis.com \
+  secretmanager.googleapis.com \
   --project "${PROJECT_ID}"
 
 echo "==> Creating Artifact Registry repository '${REPOSITORY}' in ${REGION} (skips if it already exists)"

@@ -26,12 +26,24 @@ RUN node_modules/.bin/theia download:plugins --ignore-errors
 # ---- runtime: JDK (for the Java extension), Node and Python ----
 FROM eclipse-temurin:25-jdk-jammy AS runtime
 
+# Node via NodeSource's apt repo, added directly rather than piping their
+# installer script into `bash -` as root: that script is unpinned, remote,
+# and fully arbitrary. This way the only thing fetched and executed outside
+# apt's own verification is a GPG public key (inert data) -- every actual
+# package download is then checked against it by apt itself, the same trust
+# model every other apt-installed package in this image already uses.
+# Official method: https://github.com/nodesource/distributions/wiki/Repository-Manual-Installation
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       curl ca-certificates gnupg python3 python3-pip git \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+       curl ca-certificates gnupg python3 python3-pip git util-linux \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && printf 'Types: deb\nURIs: https://deb.nodesource.com/node_22.x/\nSuites: nodistro\nComponents: main\nSigned-By: /etc/apt/keyrings/nodesource.gpg\n' > /etc/apt/sources.list.d/nodesource.sources \
+    && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --uid 1000 --create-home --shell /bin/bash theia
 
 WORKDIR /opt/theia
 COPY --from=builder /opt/repo/ide/package.json /opt/repo/ide/yarn.lock ./
@@ -39,8 +51,10 @@ COPY --from=builder /opt/repo/ide/node_modules ./node_modules
 COPY --from=builder /opt/repo/ide/lib ./lib
 COPY --from=builder /opt/repo/ide/src-gen ./src-gen
 COPY --from=builder /opt/repo/ide/plugins ./plugins
+RUN chown -R theia:theia /opt/theia
 
 COPY workspace /opt/sample-workspace
+RUN chown -R theia:theia /opt/sample-workspace
 
 COPY config/docker/entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh

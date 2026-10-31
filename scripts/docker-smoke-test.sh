@@ -6,9 +6,11 @@ cd "$(dirname "$0")/.."
 IMAGE_TAG="ai-ide:smoke-test"
 PORT="${PORT:-3098}"
 CONTAINER_NAME="ai-ide-smoke-test"
+ROOT_HTML="$(mktemp)"
 
 cleanup() {
   docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+  rm -f "${ROOT_HTML}"
 }
 trap cleanup EXIT
 
@@ -26,7 +28,7 @@ for _ in $(seq 1 60); do
   sleep 1
 done
 
-status=$(curl -s -o /tmp/ai-ide-docker-smoke-root.html -w "%{http_code}" "http://127.0.0.1:${PORT}/")
+status=$(curl -s -o "${ROOT_HTML}" -w "%{http_code}" "http://127.0.0.1:${PORT}/")
 fail=0
 
 if [ "$status" != "200" ]; then
@@ -36,7 +38,7 @@ else
   echo "PASS: root page returned HTTP 200"
 fi
 
-if grep -qi "AI-Powered Cloud IDE" /tmp/ai-ide-docker-smoke-root.html; then
+if grep -qi "AI-Powered Cloud IDE" "${ROOT_HTML}"; then
   echo "PASS: branded application name present in served page"
 else
   echo "FAIL: branded application name missing from served page"

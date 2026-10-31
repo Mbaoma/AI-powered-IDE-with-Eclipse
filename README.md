@@ -17,74 +17,49 @@ scripts/
 workspace/              Sample project opened by the IDE (one file per language)
 ```
 
-## Phase 3: AI Integration
+## Phase 4: Security Assessment
 
-Wires Gemini into the IDE through Theia AI's built-in Google AI provider, using the **free-tier Gemini Developer API** (so this costs nothing to develop against).
+Phase 4 covers IAM, private extension management, workspace policies as code, automated image rebuilds/scanning, and audit logging. Before building that out, this is a baseline security assessment of everything Phases 1-3 already shipped.
 
-**Why the free Developer API instead of Vertex AI:** Vertex AI is GCP's enterprise route while Gemini Developer API, via Google AI Studio, gives free, rate-limited access to current Gemini models with just an API key (a better fit for development). Vertex AI remains an option for a later production purpose.
+**Result: zero high-confidence (≥8/10) vulnerabilities.** No injection, auth bypass, hardcoded real credentials, or data exposure was found in project-authored code -- this project has no custom backend accepting untrusted network input, only Theia configuration, a Dockerfile, and local `gcloud`/bash deployment scripts the developer runs against their own infrastructure.
 
-**Theia AI already supports this natively**: Google AI is a first-class provider alongside Anthropic/OpenAI/Ollama, configured via a `GOOGLE_API_KEY` environment variable or in-app preferences.
+The review did surface five lower-confidence items (1-2/10) -- correctly excluded as not concretely exploitable in this project's actual single-developer threat model, but still legitimate hardening opportunities worth working through deliberately rather than leaving on the table:
 
-**Free models check [here](https://ai.google.dev/gemini-api/docs/pricing) for the current list**
+| # | Issue | File | Severity if unaddressed | Status |
+|---|---|---|---|---|
+| 1 | `GOOGLE_API_KEY` passed as a plaintext `gcloud --container-env` CLI argument and stored as a plaintext field on the Workstations config resource, instead of via Secret Manager | `scripts/gcp-create-workstation.sh` | Low (matters more once other GCP principals share the project) | **Fixed** (see Remediations) |
+| 2 | NodeSource install script run via `curl \| bash` as root during image build, with no checksum/signature pinning | `config/docker/Dockerfile` | Low (supply-chain trust in NodeSource + TLS channel) | **Fixed** (see Remediations) |
+| 3 | Runtime container has no `USER` directive -- Theia and everything it runs (extensions, debug adapters, developer code) executes as root | `config/docker/Dockerfile` | Low (bounded by the fact that arbitrary code execution is this IDE's actual purpose) | **Fixed, needs your verification** (see Remediations) |
+| 4 | Smoke-test scripts write to predictable `/tmp` paths instead of `mktemp`, unlike `smoke-test.sh`'s own server log | `scripts/smoke-test.sh`, `scripts/docker-smoke-test.sh` | Low (local-only, bounded to a bogus test verdict) | **Fixed** (see Remediations) |
 
-| Model | Use it for | Why |
-|---|---|---|
-| `gemini-3.8-flash` | Chat-based debugging, "explain this code", commit-message generation | Current flagship with the broadest free-tier access |
-| `gemini-3.5-flash-lite` | Inline completion | Fastest and cheapest model |
+**Exit criteria:** each item above is either fixed or explicitly accepted as out of scope, and the broader Phase 4 proposal items (IAM role hierarchy, private Open VSX registry with an approved extension allowlist, policy-as-code for workstation/network/IAM config, scheduled image rebuild + Artifact Registry vulnerability scanning, Cloud Audit Log sinks with alerting) are scoped into follow-up work.
 
-> **Avoid `gemini-3.1-pro` and `gemini-4-argon`.** Both show up in the auto-discovered model list (they're real models) but have **zero free-tier quota** -- paid-only. Assigning either to any agent fails on the first request with `Error 429: ... limit: 0 ... Free Tier`. If you hit this, it means an agent (often "Coder") got pointed at one of these; go to AI Configuration → Agents and switch it to `gemini-3.8-flash` or `gemini-3.5-flash-lite`.
+## Remediations
 
-**Exit criteria:** AI assistance works from inside the IDE -- local (Phase 1) or the Phase 2 cloud workstation, the wiring is the same either way -- authenticated with a free-tier API key (not baked into the image), and usage stays within free-tier rate limits.
+### 1. `GOOGLE_API_KEY` no longer passed as a plaintext `gcloud` argument
 
-**Prerequisites:**
+Cloud Workstations has no native secret-reference flag for `--container-env` (unlike Cloud Run's `--set-secrets`), so the fix moves the value into Secret Manager and has the **workstation itself fetch it at startup**, using its own attached service account -- rather than the deploy script injecting it.
 
-| Tool / account | Purpose |
-|---|---|
-| A Google account | Required to generate a Gemini API key
-| Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) | Free, no credit card, no GCP project required
+### 2. NodeSource installed via apt and a pinned keyring, not `curl | bash`
 
-![Deployed IDE](images/phase-3/deployed-ide.png)
+Replaced the installer-script pattern with [NodeSource's own officially documented manual method](https://github.com/nodesource/distributions/wiki/Repository-Manual-Installation): download their GPG public key, add it to a dedicated keyring, and register their apt repo pointed at that keyring -- then let `apt-get` do the actual package install and verification, the same trust model every other apt package in the image already uses.
 
-![AI enabled IDE](images/phase-3/ai-chat.png)
+The only thing fetched and executed outside `apt`'s own signature checking is now a GPG **public key** (inert data, not executable code), instead of an arbitrary root shell script. A compromised `deb.nodesource.com` could still serve a malicious key at first fetch (true of any HTTPS-only trust-on-first-use, including the previous approach), but it can no longer run arbitrary commands directly -- it would have to additionally forge a signed `.deb` package, a meaningfully smaller attack surface.
 
-## Using Gemini in the IDE
-
-**1. Add your key and start the IDE:**
-
-```bash
-cp config/.env.example config/.env
-./scripts/start.sh
+```dockerfile
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+printf 'Types: deb\nURIs: https://deb.nodesource.com/node_22.x/\nSuites: nodistro\nComponents: main\nSigned-By: /etc/apt/keyrings/nodesource.gpg\n' > /etc/apt/sources.list.d/nodesource.sources
+apt-get update && apt-get install -y --no-install-recommends nodejs
 ```
 
-[AI Enabled IDE](theia-ai-ide-phase-3.cluster-56mg5lb7vjfuoqjh2u7tpfhxby.cloudworkstations.dev)
+### 3. Theia runs as a non-root user
+- `config/docker/Dockerfile` creates a non-root `theia` user (fixed UID 1000) and `chown`s `/opt/theia` and `/opt/sample-workspace` (both outside `/home`, so this persists) to it. No `USER` directive.
+- `config/docker/entrypoint.sh` still starts as root (the container's default, since nothing changed that), seeds the workspace as before, then -- **after** the persistent disk is actually mounted -- creates `/home/theia`, `chown -R`s all of `/home` to `theia:theia`, sets `HOME=/home/theia` (so Theia's own config/plugin-cache directory, which Theia derives from `$HOME`, lands somewhere the non-root user can actually write), and finally execs `theia start` via `setpriv --reuid=theia --regid=theia --init-groups` -- a clean privilege drop that directly replaces the entrypoint process (no wrapper shell, so signal handling for graceful container stop still works correctly), rather than `su`/`sudo`, which wrap the command in an extra process.
 
-**2. Open AI Configuration** (`Ctrl+Shift+P` / `Cmd+Shift+P`, "AI: Open Configuration", or the sparkle icon in the activity bar) and check **Models** (Gemini models should already be listed).
+### 4. Smoke-test scripts now use `mktemp` instead of predictable `/tmp` paths
 
-![Step 1](images/phase-3/step-1.png)
-
-![Step 2](images/phase-3/step-2.png)
-
-**3. Under Agents, pick which model handles what**: you can pick `gemini-3.8-flash` for chat/reasoning and `gemini-3.5-flash-lite` for code completion.
-
-**Don't pick `gemini-3.1-pro` or `gemini-4-argon`** because despite being listed, they're paid-only and fail immediately with an Error 429.
-
-![Step 3](images/phase-3/step-3.png)
-
-![change model](images/phase-3/change-model.png)
-
-**4. Open AI Chat** (same command palette, search "AI: Open Chat", or the sparkle icon) and start prompting.
-
-![Step 4](images/phase-3/step-4.png)
-
-**Sample queries to try**, using the sample workspace:
-
-- With `hello.py` open: *"Explain what this file does."*
-- With `hello.js` open: *"Add a check for a missing name argument and print a usage message instead."*
-- *"Write a unit test for the greet function in hello.js."*
-- *"What would the Java equivalent of hello.py's greet function look like?"*
-- In the integrated terminal, after a failed command: ask the chat *"Why did that last command fail?"*
-
-![Successful query](images/phase-3/prompting.png)
+`scripts/smoke-test.sh` and `scripts/docker-smoke-test.sh` both wrote their fetched root-page HTML to fixed filenames (`/tmp/theia-smoke-root.html`, `/tmp/ai-ide-docker-smoke-root.html`) -- unlike `smoke-test.sh`'s own server log, which already used `mktemp`. Both now generate the path with `mktemp` the same way, and both clean the file up in their existing `trap cleanup EXIT` handler (which neither did before, for these files -- a small leftover-file-sprawl fix alongside the main one).
 
 ## Documentation
 

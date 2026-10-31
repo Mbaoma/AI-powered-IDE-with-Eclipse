@@ -23,16 +23,33 @@ if [ "${NETWORK}" != "default" ]; then
   CONFIG_NETWORK_FLAGS+=(--disable-public-ip-addresses)
 fi
 
-# Phase 3: thread GOOGLE_API_KEY into the container so AI features work in the deployed workstation too.
 CONTAINER_ENV_FLAGS=()
 if [ -n "${GOOGLE_API_KEY:-}" ]; then
-  CONTAINER_ENV_FLAGS+=(--container-env="GOOGLE_API_KEY=${GOOGLE_API_KEY}")
+  SECRET_ID="${GOOGLE_API_KEY_SECRET_ID:-google-api-key}"
+  SA_EMAIL="${SERVICE_ACCOUNT_ID:-theia-ai-ide-ws}@${PROJECT_ID}.iam.gserviceaccount.com"
+
+  echo "==> Syncing GOOGLE_API_KEY into Secret Manager secret '${SECRET_ID}'"
+  gcloud secrets describe "${SECRET_ID}" --project "${PROJECT_ID}" >/dev/null 2>&1 || \
+  gcloud secrets create "${SECRET_ID}" \
+    --project "${PROJECT_ID}" \
+    --replication-policy=automatic >/dev/null
+  printf '%s' "${GOOGLE_API_KEY}" | gcloud secrets versions add "${SECRET_ID}" \
+    --project "${PROJECT_ID}" \
+    --data-file=- >/dev/null
+
+  echo "    granting '${SA_EMAIL}' read access to just this secret"
+  gcloud secrets add-iam-policy-binding "${SECRET_ID}" \
+    --project "${PROJECT_ID}" \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/secretmanager.secretAccessor" >/dev/null
+
+  CONTAINER_ENV_FLAGS+=(--container-env="GOOGLE_API_KEY_SECRET=${SECRET_ID},GOOGLE_CLOUD_PROJECT=${PROJECT_ID}")
 fi
 
 echo "==> Config '${CONFIG_ID}' (image: ${IMAGE}:latest)"
 if gcloud beta workstations configs describe "${CONFIG_ID}" --cluster "${CLUSTER_ID}" --region "${REGION}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
   if [ -n "${GOOGLE_API_KEY:-}" ]; then
-    echo "    already exists -- syncing container env (GOOGLE_API_KEY)"
+    echo "    already exists -- syncing container env (GOOGLE_API_KEY_SECRET reference)"
     gcloud beta workstations configs update "${CONFIG_ID}" \
       --project "${PROJECT_ID}" \
       --region "${REGION}" \
